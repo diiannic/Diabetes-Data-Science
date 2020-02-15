@@ -18,7 +18,7 @@ import pandas as pd
 
 def ImportFileNames(csvName):
 
-  df = pd.read_csv(csvName)
+  df = pd.read_csv(csvName, low_memory=False)
   """
   Creates the original three lists of data from the selected CSV file.  
   cgm: continuous blood glucose mmol/liter
