@@ -155,7 +155,7 @@ If a bin is not entirely full, then it is considered an empty bin.
 @tz: the time zone the person to whom these glucose bin belongs lives in
 """
   
-def CreateGlucoseBins(newData, startBinDatetime, endBinDatetime):
+def CreateGlucoseBins(cgm, newData, startBinDatetime, endBinDatetime):
   """
   Puts the data into a 2 dimensional list: totalBolusDayList; it contains:
     - a list of times in a special python form.
@@ -346,7 +346,7 @@ timeSliceInBin: The amount of time of the current bin occupied by the current
 basal entry.
 """
 
-def CreateBasalBins(newData, start, end):
+def CreateBasalBins(bas, newData, start, end):
   totalBasalYearList = [[], [], []]
   for i in range(len(bas["time"])):
     totalBasalYearList[0].append(bas["time"][int(bas.index[i])])
@@ -413,7 +413,7 @@ single infusion of insulin, however, we put the total "normal" amount into the
 bin that bounds the time of infusion.
 """
   
-def CreateBolusBins(newData, start, end):
+def CreateBolusBins(bol, newData, start, end):
   totalBolusYearList = [[], []]
   for i in range(len(bol["time"])):
     totalBolusYearList[0].append(bol["time"][int(bol.index[i])])
