@@ -52,7 +52,7 @@ Also returns the correct size of the bins based on the cbg, basal, and bolus.
 
 def ImportData(csvName, dataType): # Good to go
 
-  df = pd.read_csv(csvName)
+  df = pd.read_csv(csvName, low_memory=False)
   """
   Creates the original three lists of data from the selected CSV file.  
   cgm: continuous blood glucose mmol/liter
