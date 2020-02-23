@@ -452,3 +452,144 @@ def CreateBolusBins(bol, newData, start, end):
 
           
   return bolusBinList
+
+
+# New Execute formatting function using the person objects instead of the global lists in allPersonList
+
+def executeFormatting(allPersonList, seriesSize, binSize):
+  
+  #import copy
+  #saveList = copy.deepcopy(allPersonList)
+  #allPersonList = copy.deepcopy(saveList)
+
+  for i in range(len(allPersonList)):
+    allPersonList[i] = RemoveExcessData(allPersonList[i])
+    allPersonList[i] = MakeSubsetSeries(allPersonList[i], seriesSize, binSize, 0)
+        
+  return allPersonList
+
+
+
+def RemoveExcessData(person):
+
+  for i in range(len(person.glucose)):
+    person.dates.append(person.glucose[i][0])
+    person.glucose[i] = person.glucose[i][1]
+    person.basal[i] = person.basal[i][1]
+    person.bolus[i] = person.bolus[i][1]
+
+  return person
+
+  
+"""
+Takes the values from their original bin format and puts them into a 1-dimesional
+list.  Then, put each day's worth of bin-values into its own list, and add it to
+dayList.  monthList is similar, but just separates the bin-values by month.
+
+binList: a gigantic (1 dimensional) list containing all the blood 
+glucose values in their five minute bins.
+
+subSetSize: size of the internal lists in terms of hours (so 24 would create 
+lists of 24 * 12 bins within the larger list of days).
+
+smoothingSize: the number of bins that we will be looking at to average (into 
+one value).
+"""
+
+def InitializeSubsetBins(personBinList, subsetSeriesSize):
+  
+  #Puts the 1-D personBinList into lists of intervals of hours, and adds those to a 
+  #master list
+  
+  if (subsetSeriesSize == "days"):
+    numFiveMinsInSeries = 24 * 12
+  #assuming months is 28 days
+  elif (subsetSeriesSize == "months"):
+    numFiveMinsInSeries = 24 * 12 * 28
+  elif (subsetSeriesSize == "years"):
+    numFiveMinsInSeries = 24 * 12 * 365
+  # Max will put into a series to the nearest day
+  elif (subsetSeriesSize == "max"):
+    numFiveMinsInSeries = (len(personBinList) // (12 * 24)) 
+  else:
+    numFiveMinsInSeries = subsetSeriesSize * 12
+  
+  subSetBins = []
+  tempSubSet = []
+
+  for j in range(len(personBinList)):
+    '''
+    DO NOT NEED UNLESS YOU FIND A PROBLEM LATER!
+    if (j == 0):
+      tempSubSet.append(personBinList[j])
+      continue
+    '''
+    if (j % numFiveMinsInSeries == numFiveMinsInSeries - 1): 
+      tempSubSet.append(personBinList[j])
+      subSetBins.append(tempSubSet)
+      tempSubSet = []
+    else:
+      tempSubSet.append(personBinList[j])    
+  return subSetBins, numFiveMinsInSeries    
+      
+
+
+def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):      
+  
+  #List of bins is stored in subSetBins
+  glucoseSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.glucose, subsetSeriesSize)
+  basalSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.basal, subsetSeriesSize)
+  bolusSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.bolus, subsetSeriesSize)
+
+  averageGlucoseList = []
+  averageBasalList = []
+  averageBolusList = []
+  datesList = []
+
+  amountBinsToAverage = int(12 * binningSize)
+  iterationsOfFinalBinSize = int(numFiveMinsInSeries/amountBinsToAverage)
+  for i in range(len(glucoseSubSetBins)):
+    subsetDatesList = []
+    glucoseSingleIterationList = []  
+    basalSingleIterationList = []  
+    bolusSingleIterationList = []  
+    for j in range(iterationsOfFinalBinSize):
+      glucoseBinToAdd = []
+      basalBinToAdd = []
+      bolusBinToAdd = []
+      subsetDatesList.append(person.dates[(i*numFiveMinsInSeries) + (amountBinsToAverage*j)])
+      for k in range(amountBinsToAverage):
+        basalBinToAdd.append(basalSubSetBins[i][(amountBinsToAverage*j) + k]) 
+        bolusBinToAdd.append(bolusSubSetBins[i][(amountBinsToAverage*j) + k]) 
+        glucoseBinToAdd.append(glucoseSubSetBins[i][(amountBinsToAverage*j) + k]) 
+
+      usableGlucoseBinToAdd = []
+      for s in range(len(glucoseBinToAdd)):
+        if not glucoseBinToAdd[s]: 
+          continue
+        else:
+          usableGlucoseBinToAdd.append(glucoseBinToAdd[s])
+      if len(usableGlucoseBinToAdd) < (.5 * len(glucoseBinToAdd)):
+        glucoseSingleIterationList.append(None)
+        continue
+
+      if (averageMedian == 0):
+        glucoseSingleIterationList.append(statistics.mean(usableGlucoseBinToAdd))
+        basalSingleIterationList.append(statistics.mean(basalBinToAdd))
+        bolusSingleIterationList.append(statistics.mean(bolusBinToAdd))
+      if (averageMedian == 1): 
+        glucoseSingleIterationList.append(statistics.median(usableGlucoseBinToAdd))
+        basalSingleIterationList.append(statistics.median(basalBinToAdd))
+        bolusSingleIterationList.append(statistics.median(bolusBinToAdd))
+
+    averageGlucoseList.append(glucoseSingleIterationList)
+    averageBasalList.append(basalSingleIterationList)
+    averageBolusList.append(bolusSingleIterationList)
+    datesList.append(subsetDatesList)
+  
+  import collections
+  Person = collections.namedtuple('Person', ['name', 'glucose', 'basal', 'bolus', 'dates'])
+
+  newPerson = Person(person.name, averageGlucoseList, averageBasalList, averageBolusList, datesList)
+
+  return newPerson
