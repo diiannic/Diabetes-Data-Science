@@ -137,8 +137,8 @@ def ImportData(csvName, dataType): # Good to go
       endBinDatetime = endBolusTime
   
   #standardizes start and end dates to midnight with buffer
-  startBinDatetime = datetime(startBinDatetime.year, startBinDatetime.month, startBinDatetime.day, 0, 0)
-  endBinDatetime = datetime(endBinDatetime.year, endBinDatetime.month, endBinDatetime.day, 0, 0) + timedelta(days = 1)
+  startBinDatetime = datetime(startBinDatetime.year, startBinDatetime.month, startBinDatetime.day, 0, 0) - timedelta(days = 1)
+  endBinDatetime = datetime(endBinDatetime.year, endBinDatetime.month, endBinDatetime.day, 0, 0) + timedelta(days = 2)
   return cgm, bas, bol, startBinDatetime, endBinDatetime
   
   
