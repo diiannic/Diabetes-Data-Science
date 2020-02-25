@@ -495,7 +495,7 @@ def InitializeSubsetBins(personBinList, subsetSeriesSize):
     numFiveMinsInSeries = 24 * 12 * 365
   # Max will put into a series to the nearest day
   elif (subsetSeriesSize == "max"):
-    numFiveMinsInSeries = (len(personBinList) // (12 * 24)) 
+    numFiveMinsInSeries = len(personBinList) 
   else:
     numFiveMinsInSeries = subsetSeriesSize * 12
   
