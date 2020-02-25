@@ -454,21 +454,6 @@ def CreateBolusBins(bol, newData, start, end):
   return bolusBinList
 
 
-# New Execute formatting function using the person objects instead of the global lists in allPersonList
-
-def executeFormatting(allPersonList, seriesSize, binSize):
-  
-  #import copy
-  #saveList = copy.deepcopy(allPersonList)
-  #allPersonList = copy.deepcopy(saveList)
-
-  for i in range(len(allPersonList)):
-    allPersonList[i] = RemoveExcessData(allPersonList[i])
-    allPersonList[i] = MakeSubsetSeries(allPersonList[i], seriesSize, binSize, 0)
-        
-  return allPersonList
-
-
 
 def RemoveExcessData(person):
 
@@ -593,3 +578,20 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
   newPerson = Person(person.name, averageGlucoseList, averageBasalList, averageBolusList, datesList)
 
   return newPerson
+
+
+
+
+# New Execute formatting function using the person objects instead of the global lists in allPersonList
+
+def executeFormatting(allPersonList, seriesSize, binSize):
+  
+  #import copy
+  #saveList = copy.deepcopy(allPersonList)
+  #allPersonList = copy.deepcopy(saveList)
+
+  for i in range(len(allPersonList)):
+    allPersonList[i] = RemoveExcessData(allPersonList[i])
+    allPersonList[i] = MakeSubsetSeries(allPersonList[i], seriesSize, binSize, 0)
+        
+  return allPersonList
