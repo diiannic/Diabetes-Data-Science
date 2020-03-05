@@ -470,13 +470,10 @@ def RemoveExcessData(person):
 Takes the values from their original bin format and puts them into a 1-dimesional
 list.  Then, put each day's worth of bin-values into its own list, and add it to
 dayList.  monthList is similar, but just separates the bin-values by month.
-
 binList: a gigantic (1 dimensional) list containing all the blood 
 glucose values in their five minute bins.
-
 subSetSize: size of the internal lists in terms of hours (so 24 would create 
 lists of 24 * 12 bins within the larger list of days).
-
 smoothingSize: the number of bins that we will be looking at to average (into 
 one value).
 """
@@ -556,6 +553,8 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
           usableGlucoseBinToAdd.append(glucoseBinToAdd[s])
       if len(usableGlucoseBinToAdd) < (.5 * len(glucoseBinToAdd)):
         glucoseSingleIterationList.append(None)
+        basalSingleIterationList.append(statistics.median(basalBinToAdd))
+        bolusSingleIterationList.append(statistics.median(bolusBinToAdd))
         continue
 
       if (averageMedian == 0):
@@ -581,14 +580,9 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
 
 
 
-
 # New Execute formatting function using the person objects instead of the global lists in allPersonList
 
 def executeFormatting(allPersonList, seriesSize, binSize):
-  
-  #import copy
-  #saveList = copy.deepcopy(allPersonList)
-  #allPersonList = copy.deepcopy(saveList)
 
   for i in range(len(allPersonList)):
     allPersonList[i] = RemoveExcessData(allPersonList[i])
