@@ -58,11 +58,13 @@ def ImportData(csvName, dataType): # Good to go
   cgm: continuous blood glucose mmol/liter
   bas: basal in units/hour
   bol: bolus in units
+  food: number of carbohydrates consumed
   """
 
   cgm = df.loc[df.type == "cbg", ["time", "value"]]
   bas = df.loc[df.type == "basal", ["time", "rate", "duration"]]
   bol = df.loc[df.type == "bolus", ["time", "normal"]]
+  food = df.loc[df.type == "food", ["time", "nutrition"]]
       
   #Checking for what the greatest start and end bounds between glucose, basal, and bolus
   
@@ -139,7 +141,7 @@ def ImportData(csvName, dataType): # Good to go
   #standardizes start and end dates to midnight with buffer
   startBinDatetime = datetime(startBinDatetime.year, startBinDatetime.month, startBinDatetime.day, 0, 0) - timedelta(days = 1)
   endBinDatetime = datetime(endBinDatetime.year, endBinDatetime.month, endBinDatetime.day, 0, 0) + timedelta(days = 2)
-  return cgm, bas, bol, startBinDatetime, endBinDatetime
+  return cgm, bas, bol, food, startBinDatetime, endBinDatetime
   
   
 """
@@ -465,7 +467,51 @@ def RemoveExcessData(person):
 
   return person
 
+"""
+This function creates the bins containing the food values.
+"""
+
+def CreateFoodBins(food, newData, startBinDatetime, endBinDatetime):
+  totalFoodYearList = [[], []]
+  for i in range(len(food["time"])):
+    totalFoodYearList[0].append(food["time"][int(food.index[i])])
+    foodString = food["nutrition"][int(food.index[i])]
+    foodString = foodString.replace("{'carbohydrate': {'net': ", "")
+    foodString = foodString.replace(", 'units': 'grams'}}", "")
+    totalFoodYearList[1].append(float(foodString))
+
+  for i in range(len(totalFoodYearList[0])):
+    totalFoodYearList[0][i] = parse(totalFoodYearList[0][i]) # parses time strings into datetime values
+    totalFoodYearList[0][i] = totalFoodYearList[0][i].replace(microsecond = 0, tzinfo=pytz.UTC)  
+    totalFoodYearList[0][i] = totalFoodYearList[0][i].replace(tzinfo=None) 
   
+  if (newData != "new"):
+    totalFoodYearList[0].reverse()
+    totalFoodYearList[1].reverse()  
+
+  countDatetime = startBinDatetime
+  datetimeBin = [] 
+  foodBinList = []
+
+  while (countDatetime != endBinDatetime): # while the count time is not 5 mins past the last day in the sequence
+    datetimeBin = [countDatetime, 0] # time at bin (lower bound), BG value of bin, portion of bin which has been filled
+    foodBinList.append(datetimeBin)
+    countDatetime = countDatetime + timedelta(minutes=5) 
+
+  foodTimeIndex = 0  
+  for i in range(len(foodBinList)):
+    if (i == len(foodBinList) - 1):
+      continue
+    if (foodTimeIndex != len(totalFoodYearList[0])):
+      while(totalFoodYearList[0][foodTimeIndex] >= foodBinList[i][0] and totalFoodYearList[0][foodTimeIndex] < foodBinList[i+1][0]):
+        if (not math.isnan(totalFoodYearList[1][foodTimeIndex])):
+          foodBinList[i][1] += totalFoodYearList[1][foodTimeIndex]
+        foodTimeIndex += 1
+        if (foodTimeIndex == len(totalFoodYearList[0])):
+          break
+          
+  return foodBinList  
+
 """
 Takes the values from their original bin format and puts them into a 1-dimesional
 list.  Then, put each day's worth of bin-values into its own list, and add it to
