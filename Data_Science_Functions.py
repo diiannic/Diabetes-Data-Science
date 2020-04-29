@@ -456,17 +456,6 @@ def CreateBolusBins(bol, newData, start, end):
   return bolusBinList
 
 
-
-def RemoveExcessData(person):
-
-  for i in range(len(person.glucose)):
-    person.dates.append(person.glucose[i][0])
-    person.glucose[i] = person.glucose[i][1]
-    person.basal[i] = person.basal[i][1]
-    person.bolus[i] = person.bolus[i][1]
-
-  return person
-
 """
 This function creates the bins containing the food values.
 """
@@ -511,6 +500,21 @@ def CreateFoodBins(food, newData, startBinDatetime, endBinDatetime):
           break
           
   return foodBinList  
+
+'''
+Filters data from list of lists to only one list of values of interest
+'''
+
+def RemoveExcessData(person):
+
+  for i in range(len(person.glucose)):
+    person.dates.append(person.glucose[i][0])
+    person.glucose[i] = person.glucose[i][1]
+    person.basal[i] = person.basal[i][1]
+    person.bolus[i] = person.bolus[i][1]
+    person.food[i] = person.food[i][1]
+
+  return person
 
 """
 Takes the values from their original bin format and puts them into a 1-dimesional
@@ -568,10 +572,12 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
   glucoseSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.glucose, subsetSeriesSize)
   basalSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.basal, subsetSeriesSize)
   bolusSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.bolus, subsetSeriesSize)
+  foodSubSetBins, numFiveMinsInSeries = InitializeSubsetBins(person.food, subsetSeriesSize)
 
   averageGlucoseList = []
   averageBasalList = []
   averageBolusList = []
+  averageFoodList = []
   datesList = []
 
   amountBinsToAverage = int(12 * binningSize)
@@ -581,14 +587,17 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
     glucoseSingleIterationList = []  
     basalSingleIterationList = []  
     bolusSingleIterationList = []  
+    foodSingleIterationList = []  
     for j in range(iterationsOfFinalBinSize):
       glucoseBinToAdd = []
       basalBinToAdd = []
       bolusBinToAdd = []
+      foodBinToAdd = []
       subsetDatesList.append(person.dates[(i*numFiveMinsInSeries) + (amountBinsToAverage*j)])
       for k in range(amountBinsToAverage):
         basalBinToAdd.append(basalSubSetBins[i][(amountBinsToAverage*j) + k]) 
         bolusBinToAdd.append(bolusSubSetBins[i][(amountBinsToAverage*j) + k]) 
+        foodBinToAdd.append(foodSubSetBins[i][(amountBinsToAverage*j) + k]) 
         glucoseBinToAdd.append(glucoseSubSetBins[i][(amountBinsToAverage*j) + k]) 
 
       usableGlucoseBinToAdd = []
@@ -601,26 +610,30 @@ def MakeSubsetSeries(person, subsetSeriesSize, binningSize, averageMedian):
         glucoseSingleIterationList.append(None)
         basalSingleIterationList.append(statistics.median(basalBinToAdd))
         bolusSingleIterationList.append(statistics.median(bolusBinToAdd))
+        foodSingleIterationList.append(statistics.median(foodBinToAdd))
         continue
 
       if (averageMedian == 0):
         glucoseSingleIterationList.append(statistics.mean(usableGlucoseBinToAdd))
         basalSingleIterationList.append(statistics.mean(basalBinToAdd))
         bolusSingleIterationList.append(statistics.mean(bolusBinToAdd))
+        foodSingleIterationList.append(statistics.mean(foodBinToAdd))
       if (averageMedian == 1): 
         glucoseSingleIterationList.append(statistics.median(usableGlucoseBinToAdd))
         basalSingleIterationList.append(statistics.median(basalBinToAdd))
         bolusSingleIterationList.append(statistics.median(bolusBinToAdd))
+        foodSingleIterationList.append(statistics.median(foodBinToAdd))
 
     averageGlucoseList.append(glucoseSingleIterationList)
     averageBasalList.append(basalSingleIterationList)
     averageBolusList.append(bolusSingleIterationList)
+    averageFoodList.append(foodSingleIterationList)
     datesList.append(subsetDatesList)
   
   import collections
-  Person = collections.namedtuple('Person', ['name', 'glucose', 'basal', 'bolus', 'dates'])
+  Person = collections.namedtuple('Person', ['name', 'glucose', 'basal', 'bolus', 'food', 'dates', 'IOB'])
 
-  newPerson = Person(person.name, averageGlucoseList, averageBasalList, averageBolusList, datesList)
+  newPerson = Person(person.name, averageGlucoseList, averageBasalList, averageBolusList, averageFoodList, datesList, [])
 
   return newPerson
 
